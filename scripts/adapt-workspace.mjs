@@ -5,7 +5,10 @@ import {createHash} from 'node:crypto';
 
 const marker = '// dsh-plugin-sessions workspace adapter v2';
 const previousMarker = '// dsh-plugin-sessions workspace adapter v1';
-const upstreamVersion = '0.1.5-rc.2';
+// DSH Desktop resolves a Profile-local package ahead of its own copy when the
+// Profile copy carries a higher version, so the same upstream build is also
+// adapted under the overlay version.
+const upstreamVersions = ['0.1.5-rc.2', '0.1.5-rc.3'];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const once = (source, before, after) => {
   if (source.split(before).length !== 2) throw new Error('WORKSPACE_ADAPTER_INCOMPATIBLE: expected one exact anchor');
@@ -82,7 +85,7 @@ export async function integrate(runtime, action = 'check') {
   for (const [name, adapt] of [['dsh-client-ui-workspace', adaptWorkspace], ['dsh-client-ui-conversation', adaptConversation]]) {
     const pkg = join(runtime, 'node_modules/@deepseek-ai', name);
     const meta = JSON.parse(await readFile(join(pkg, 'package.json'), 'utf8'));
-    if (meta.version !== upstreamVersion) throw new Error('WORKSPACE_ADAPTER_VERSION_UNSUPPORTED: ' + meta.version);
+    if (!upstreamVersions.includes(meta.version)) throw new Error('WORKSPACE_ADAPTER_VERSION_UNSUPPORTED: ' + meta.version);
     const path = join(pkg, 'lib/client.js');
     const backupPath = path + '.dsh-sessions-backup.json';
     const current = await readFile(path, 'utf8');
