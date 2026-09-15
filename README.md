@@ -2,6 +2,18 @@
 
 `dsh-plugin-sessions` 为 DeepSeek Harness Web 提供会话引用复制，以及无需选择工作目录的对话模式。支持版本：`0.1.5-rc.2`，Node.js 24。
 
+## 宿主支持
+
+本插件同时用于 DeepSeek Harness Web 与 DSH Desktop（Electron 壳），两端共用同一个包 `dsh-plugin-sessions`，没有桌面端专用包。桌面端也没有需要单独维护的仓库，两端由本仓库同一份实现维护。
+
+对话工作区的默认根目录按 `DSH_HOME` 解析：优先 `process.env.DSH_HOME`，其次 `~/.dsh`；也可以用 `plainRoot` 显式指定。因此 Web 端与 Desktop 端各用自己的 home，不需要在桌面 profile 里额外写补丁。
+
+客户端适配（工作区芯片标签与退出控件）由 `scripts/adapt-workspace.mjs` 按语义化版本校验并覆盖 `@deepseek-ai/dsh-client-ui-workspace` 与 `dsh-client-ui-conversation`。DSH Desktop 自带的客户端版本较新，覆盖包按 profile 局部安装，两端各自适配。
+
+插件只通过官方 service、slot 与 patch 组合，不把宿主专属能力放进顶层 `inject`；宿主规范见 [DSH Desktop 插件开发文档](https://github.com/anywhere-labs/dsh-desktop/blob/master/docs/plugin-development.md)。
+
+验证状态：Web 端有 `npm test`（11 项）与 `scripts/integration-check.mjs` 的确定性集成检查；桌面端已确认插件在 desktop profile 中加载、客户端覆盖包生效，其他交互未逐项验证。
+
 ## 使用
 
 - 点击左侧 **新会话** 直接开始对话：Host 会在聊天记录之外注册一个名为 **对话** 的工作区，指向 `~/.dsh/plain-sessions`，新建的会话就运行在该目录下，因此输入卡片始终可用，不需要先选择工作目录。

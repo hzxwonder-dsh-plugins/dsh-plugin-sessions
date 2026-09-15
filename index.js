@@ -7,8 +7,19 @@ export const name = 'dsh-plugin-sessions';
 export const inject = ['connection', 'sessionController', 'sessionReferenceResolver', 'workspaceRegistry'];
 const defaultTitle = '对话';
 
+/**
+ * Chat directory used when the configuration names no explicit `plainRoot`.
+ * The Harness home decides it, so a Web host and a Desktop host each keep their
+ * own chat files; `~/.dsh` stays the historical fallback for a host that
+ * exports no DSH_HOME.
+ */
+export function defaultPlainRoot(env = process.env) {
+  const home = typeof env?.DSH_HOME === 'string' && env.DSH_HOME.trim() !== '' ? env.DSH_HOME : join(homedir(), '.dsh');
+  return join(home, 'plain-sessions');
+}
+
 export function createChatService(ctx, config = {}) {
-  const root = resolve(config.plainRoot ?? join(homedir(), '.dsh', 'plain-sessions'));
+  const root = resolve(config.plainRoot ?? defaultPlainRoot());
   const title = typeof config.title === 'string' && config.title.trim() !== '' ? config.title.trim() : defaultTitle;
   // The Chat workspace is an ordinary Workspace rooted at the chat directory: sessions
   // created inside it are owned by the registry and reachable from the workspace

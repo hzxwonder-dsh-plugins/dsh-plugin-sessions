@@ -1,11 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, rm, stat, readFile, realpath} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {homedir, tmpdir} from 'node:os';
+import {join, resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {createChatService} from '../index.js';
+import {createChatService, defaultPlainRoot} from '../index.js';
 import {sessionReference} from '../reference.js';
 import {adaptWorkspace, adaptConversation} from '../scripts/adapt-workspace.mjs';
 
@@ -85,6 +85,15 @@ test('the chat workspace title is configurable', async t => {
   const chat = await createChatService({workspaceRegistry: registry}, {plainRoot: root, title: '  Chat  '}).ensure();
   assert.equal(chat.title, 'Chat');
   assert.deepEqual(registry.created, [{path: await realpath(root), title: 'Chat'}]);
+});
+
+test('without an explicit plainRoot the chat directory follows the Harness home', () => {
+  assert.equal(defaultPlainRoot({DSH_HOME: '/tmp/dsh-home'}), join('/tmp/dsh-home', 'plain-sessions'));
+  assert.equal(defaultPlainRoot({DSH_HOME: '   '}), join(homedir(), '.dsh', 'plain-sessions'));
+  assert.equal(defaultPlainRoot({}), join(homedir(), '.dsh', 'plain-sessions'));
+  // The service resolves the same default, so a Desktop host keeps its own home.
+  assert.equal(createChatService({workspaceRegistry: fakeRegistry()}, {}).root, resolve(defaultPlainRoot()));
+  assert.equal(createChatService({workspaceRegistry: fakeRegistry()}, {plainRoot: '/tmp/explicit'}).root, '/tmp/explicit');
 });
 
 test('unknown references are rejected through exact inspection', async () => {
